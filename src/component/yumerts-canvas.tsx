@@ -11,12 +11,11 @@ interface YumertsCanvasState {
 }
 
 interface YumertsCanvasProps {
-    websocketUrl: string;
+    inputReceived: (input: any) => void;
 }
 
 class YumertsCanvas extends Component<YumertsCanvasProps, YumertsCanvasState> {
 
-    private socket: WebSocket | undefined;
     private canvasRef: React.RefObject<HTMLCanvasElement>;
 
     constructor(props: YumertsCanvasProps) {
@@ -30,39 +29,21 @@ class YumertsCanvas extends Component<YumertsCanvasProps, YumertsCanvasState> {
     }
 
     componentDidMount() {
-        const { websocketUrl } = this.props;
-        this.socket = new WebSocket(websocketUrl);
-
-        this.socket.onopen = () => {
-            console.log("WebSocket connection established");
-        };
-
-        this.socket.onmessage = (event) => {
-            console.log("WebSocket message received:", event.data);
-            const troops = JSON.parse(event.data);
-            this.setState({ troops }, this.drawCanvas);
-        };
-
-        this.socket.onclose = () => {
-            console.log("WebSocket connection closed");
-        };
-
-        this.socket.onerror = (error) => {
-            console.error("WebSocket error:", error);
-        };
-
         this.drawCanvas();
     }
 
     componentWillUnmount() {
-        if (this.socket) {
-            this.socket.close();
-        }
+        // Cleanup if necessary
     }
 
     shouldComponentUpdate(nextProps: YumertsCanvasProps, nextState: YumertsCanvasState) {
         // Only update if the exampleState or selectedTroop has changed
         return this.state.exampleState !== nextState.exampleState || this.state.selectedTroop !== nextState.selectedTroop;
+    }
+
+    updateState = (newState: string) => {
+        const troops = JSON.parse(newState);
+        this.setState({ troops }, this.drawCanvas);
     }
 
     drawCanvas = () => {
@@ -121,6 +102,22 @@ class YumertsCanvas extends Component<YumertsCanvasProps, YumertsCanvasState> {
                     };
                 }
             });
+            // Draw cracks based on troop health
+            this.state.troops.forEach(troop => {
+                const { x, y, health } = troop;
+                if (health < 100) {
+                    const crackCount = Math.floor((100 - health) / 20); // More cracks for lower health
+                    for (let i = 0; i < crackCount; i++) {
+                        const crackX = (x - 1) * cellSize + Math.random() * cellSize;
+                        const crackY = (y - 1) * cellSize + Math.random() * cellSize;
+                        ctx.beginPath();
+                        ctx.moveTo(crackX, crackY);
+                        ctx.lineTo(crackX + Math.random() * 10 - 5, crackY + Math.random() * 10 - 5);
+                        ctx.strokeStyle = 'black';
+                        ctx.stroke();
+                    }
+                }
+            });
 
             // Draw arrows for troops with target coordinates
             this.state.troops.forEach(troop => {
@@ -131,7 +128,7 @@ class YumertsCanvas extends Component<YumertsCanvasProps, YumertsCanvasState> {
                     ctx.beginPath();
                     ctx.moveTo((startX - 1) * cellSize + cellSize / 2, (startY - 1) * cellSize + cellSize / 2);
                     ctx.lineTo((endX - 1) * cellSize + cellSize / 2, (endY - 1) * cellSize + cellSize / 2);
-                    ctx.strokeStyle = 'green';
+                    ctx.strokeStyle = 'yellow';
                     ctx.stroke();
 
                     // Draw arrowhead
@@ -172,7 +169,7 @@ class YumertsCanvas extends Component<YumertsCanvasProps, YumertsCanvasState> {
                     troopId: this.state.selectedTroop.troopId,
                     targetCoordinate: { x, y }
                 };
-                this.socket?.send(JSON.stringify(message));
+                this.props.inputReceived(message);
                 console.log('Move command sent:', message);
             }
         }

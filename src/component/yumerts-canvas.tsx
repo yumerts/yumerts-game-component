@@ -1,4 +1,8 @@
 import React, { Component } from "react";
+import archerIcon from '../assets/Archer.png';
+import infantryIcon from '../assets/Infantry.png';
+import cavalryIcon from '../assets/Cavalry.png';
+import grassTexture from '../assets/GrassTexture.png'; // Add your grass texture image here
 
 interface YumertsCanvasState {
     exampleState: string;
@@ -67,70 +71,85 @@ class YumertsCanvas extends Component<YumertsCanvasProps, YumertsCanvasState> {
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        // Redraw grid
-        for (let x = 0; x <= canvas.width; x += cellSize) {
-            ctx.moveTo(x, 0);
-            ctx.lineTo(x, canvas.height);
-        }
-
-        for (let y = 0; y <= canvas.height; y += cellSize) {
-            ctx.moveTo(0, y);
-            ctx.lineTo(canvas.width, y);
-        }
-
-        ctx.strokeStyle = '#000';
-        ctx.stroke();
-
-        // Draw troops
-        this.state.troops.forEach(troop => {
-            const { x, y } = troop.currentCoordinate;
-            ctx.fillStyle = troop.faction === "0" ? 'blue' : 'red';
-            ctx.fillRect((x - 1) * cellSize, (y - 1) * cellSize, cellSize, cellSize);
-
-            let troopType = '';
-            switch (troop.troopType) {
-                case "0":
-                    troopType = 'I';
-                    break;
-                case "1":
-                    troopType = 'A';
-                    break;
-                case "2":
-                    troopType = 'C';
-                    break;
+        // Draw grass texture background
+        const grassImg = new Image();
+        grassImg.src = grassTexture;
+        grassImg.onload = () => {
+            const pattern = ctx.createPattern(grassImg, 'repeat');
+            if (pattern) {
+                ctx.fillStyle = pattern;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
             }
-            ctx.fillStyle = 'white';
-            ctx.font = "20px Georgia";
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(troopType, (x - 1) * cellSize + cellSize / 2, (y - 1) * cellSize + cellSize / 2);
-        });
 
-        // Draw arrows for troops with target coordinates
-        this.state.troops.forEach(troop => {
-            const { x: startX, y: startY } = troop.currentCoordinate;
-            const { x: endX, y: endY } = troop.targetCoordinate || {};
+            // Redraw grid with less obvious lines
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)'; // Light gray with transparency
+            ctx.lineWidth = 0.5;
 
-            if (endX !== undefined && endY !== undefined && (startX !== endX || startY !== endY)) {
-                ctx.beginPath();
-                ctx.moveTo((startX - 1) * cellSize + cellSize / 2, (startY - 1) * cellSize + cellSize / 2);
-                ctx.lineTo((endX - 1) * cellSize + cellSize / 2, (endY - 1) * cellSize + cellSize / 2);
-                ctx.strokeStyle = 'green';
-                ctx.stroke();
-
-                // Draw arrowhead
-                const headlen = 10; // length of head in pixels
-                const angle = Math.atan2(endY - startY, endX - startX);
-                ctx.beginPath();
-                ctx.moveTo((endX - 1) * cellSize + cellSize / 2, (endY - 1) * cellSize + cellSize / 2);
-                ctx.lineTo((endX - 1) * cellSize + cellSize / 2 - headlen * Math.cos(angle - Math.PI / 6), (endY - 1) * cellSize + cellSize / 2 - headlen * Math.sin(angle - Math.PI / 6));
-                ctx.moveTo((endX - 1) * cellSize + cellSize / 2, (endY - 1) * cellSize + cellSize / 2);
-                ctx.lineTo((endX - 1) * cellSize + cellSize / 2 - headlen * Math.cos(angle + Math.PI / 6), (endY - 1) * cellSize + cellSize / 2 - headlen * Math.sin(angle + Math.PI / 6));
-                ctx.stroke();
+            for (let x = 0; x <= canvas.width; x += cellSize) {
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
             }
-        });
 
-        canvas.addEventListener('click', this.handleCanvasClick);
+            for (let y = 0; y <= canvas.height; y += cellSize) {
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+            }
+
+            ctx.stroke();
+
+            // Draw troops
+            this.state.troops.forEach(troop => {
+                const { x, y } = troop.currentCoordinate;
+                ctx.fillStyle = troop.faction === "0" ? 'blue' : 'red';
+                ctx.fillRect((x - 1) * cellSize, (y - 1) * cellSize, cellSize, cellSize);
+
+                let troopImage;
+                switch (troop.troopType) {
+                    case "0":
+                        troopImage = infantryIcon;
+                        break;
+                    case "1":
+                        troopImage = archerIcon;
+                        break;
+                    case "2":
+                        troopImage = cavalryIcon;
+                        break;
+                }
+                if (troopImage) {
+                    const img = new Image();
+                    img.src = troopImage;
+                    img.onload = () => {
+                        ctx.drawImage(img, (x - 1) * cellSize, (y - 1) * cellSize, cellSize, cellSize);
+                    };
+                }
+            });
+
+            // Draw arrows for troops with target coordinates
+            this.state.troops.forEach(troop => {
+                const { x: startX, y: startY } = troop.currentCoordinate;
+                const { x: endX, y: endY } = troop.targetCoordinate || {};
+
+                if (endX !== undefined && endY !== undefined && (startX !== endX || startY !== endY)) {
+                    ctx.beginPath();
+                    ctx.moveTo((startX - 1) * cellSize + cellSize / 2, (startY - 1) * cellSize + cellSize / 2);
+                    ctx.lineTo((endX - 1) * cellSize + cellSize / 2, (endY - 1) * cellSize + cellSize / 2);
+                    ctx.strokeStyle = 'green';
+                    ctx.stroke();
+
+                    // Draw arrowhead
+                    const headlen = 10; // length of head in pixels
+                    const angle = Math.atan2(endY - startY, endX - startX);
+                    ctx.beginPath();
+                    ctx.moveTo((endX - 1) * cellSize + cellSize / 2, (endY - 1) * cellSize + cellSize / 2);
+                    ctx.lineTo((endX - 1) * cellSize + cellSize / 2 - headlen * Math.cos(angle - Math.PI / 6), (endY - 1) * cellSize + cellSize / 2 - headlen * Math.sin(angle - Math.PI / 6));
+                    ctx.moveTo((endX - 1) * cellSize + cellSize / 2, (endY - 1) * cellSize + cellSize / 2);
+                    ctx.lineTo((endX - 1) * cellSize + cellSize / 2 - headlen * Math.cos(angle + Math.PI / 6), (endY - 1) * cellSize + cellSize / 2 - headlen * Math.sin(angle + Math.PI / 6));
+                    ctx.stroke();
+                }
+            });
+
+            canvas.addEventListener('click', this.handleCanvasClick);
+        };
     }
 
     handleCanvasClick = (event: MouseEvent) => {

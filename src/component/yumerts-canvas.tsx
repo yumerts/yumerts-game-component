@@ -2,7 +2,7 @@ import React, { Component } from "react";
 import archerIcon from '../assets/Archer.png';
 import infantryIcon from '../assets/Infantry.png';
 import cavalryIcon from '../assets/Cavalry.png';
-import grassTexture from '../assets/GrassTexture.png'; // Add your grass texture image here
+import grassImage from '../assets/GrassTexture.png';
 
 interface YumertsCanvasState {
     exampleState: string;
@@ -60,6 +60,11 @@ class YumertsCanvas extends Component<YumertsCanvasProps, YumertsCanvasState> {
         }
     }
 
+    shouldComponentUpdate(nextProps: YumertsCanvasProps, nextState: YumertsCanvasState) {
+        // Only update if the exampleState or selectedTroop has changed
+        return this.state.exampleState !== nextState.exampleState || this.state.selectedTroop !== nextState.selectedTroop;
+    }
+
     drawCanvas = () => {
         const canvas = this.canvasRef.current;
         if (!canvas) return;
@@ -69,22 +74,14 @@ class YumertsCanvas extends Component<YumertsCanvasProps, YumertsCanvasState> {
         const gridSize = 20;
         const cellSize = canvas.width / gridSize;
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Draw background
+        const background = new Image();
+        background.src = grassImage;
+        background.onload = () => {
+            ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
 
-        // Draw grass texture background
-        const grassImg = new Image();
-        grassImg.src = grassTexture;
-        grassImg.onload = () => {
-            const pattern = ctx.createPattern(grassImg, 'repeat');
-            if (pattern) {
-                ctx.fillStyle = pattern;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-            }
-
-            // Redraw grid with less obvious lines
-            ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)'; // Light gray with transparency
-            ctx.lineWidth = 0.5;
-
+            // Redraw grid
+            ctx.beginPath();
             for (let x = 0; x <= canvas.width; x += cellSize) {
                 ctx.moveTo(x, 0);
                 ctx.lineTo(x, canvas.height);
@@ -95,6 +92,7 @@ class YumertsCanvas extends Component<YumertsCanvasProps, YumertsCanvasState> {
                 ctx.lineTo(canvas.width, y);
             }
 
+            ctx.strokeStyle = '#888'; // Changed stroke color to a less apparent shade
             ctx.stroke();
 
             // Draw troops
@@ -147,9 +145,9 @@ class YumertsCanvas extends Component<YumertsCanvasProps, YumertsCanvasState> {
                     ctx.stroke();
                 }
             });
-
-            canvas.addEventListener('click', this.handleCanvasClick);
         };
+
+        canvas.addEventListener('click', this.handleCanvasClick);
     }
 
     handleCanvasClick = (event: MouseEvent) => {
@@ -185,7 +183,7 @@ class YumertsCanvas extends Component<YumertsCanvasProps, YumertsCanvasState> {
             <div>
                 <h1>Yumerts Canvas</h1>
                 <p>{this.state.exampleState}</p>
-                <canvas ref={this.canvasRef} width="400" height="400"></canvas>
+                <canvas ref={this.canvasRef} width="500" height="500"></canvas>
             </div>
         );
     }
